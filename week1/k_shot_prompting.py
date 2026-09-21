@@ -5,7 +5,7 @@ from ollama import chat
 
 load_dotenv()
 
-NUM_RUNS_TIMES = 5
+NUM_RUNS_TIMES = 20
 
 # TODO: Fill this in!
 YOUR_SYSTEM_PROMPT = """
@@ -19,16 +19,13 @@ You are a letter-reversal tool. Your only job is to reverse the order of charact
 4. If the input is empty, output an empty string.
 5. Do not "correct" or reinterpret the input. Reverse it exactly as given.
 6. Starting from the last character of the input word, extract one character at a time until you reach the first character. Do not skip any repeated letters.
-
+7. Do NOT match the input to any example by similarity.
+8. Reverse the EXACT characters of the input, one by one.
 # Output Format
 Raw text only. No quotes, no code blocks, no labels.
 
 # Examples
-Input: statustext
-Output: txetsutats
 
-Input: statistics
-Output: scitsitats
 
 Input: understand
 Output: dnatsrednu
@@ -39,8 +36,7 @@ Output: tnemssessa
 Input: successful
 Output: lufsseccus
 
-Input: teststatus
-Output: sutatstset
+
 
 # Task
 Reverse the input letter that user input, character by character.
