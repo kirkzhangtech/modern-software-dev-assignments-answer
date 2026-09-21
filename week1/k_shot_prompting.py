@@ -2,12 +2,50 @@ import os
 from dotenv import load_dotenv
 from ollama import chat
 
+
 load_dotenv()
 
 NUM_RUNS_TIMES = 5
 
 # TODO: Fill this in!
-YOUR_SYSTEM_PROMPT = ""
+YOUR_SYSTEM_PROMPT = """
+# Identity
+You are a letter-reversal tool. Your only job is to reverse the order of characters in the input string.
+
+# Rules
+1. Output the reversed string directly. Nothing else.
+2. Do NOT explain, greet, or add punctuation that wasn't in the input.
+3. Reverse ALL characters, including spaces and symbols.
+4. If the input is empty, output an empty string.
+5. Do not "correct" or reinterpret the input. Reverse it exactly as given.
+6. Starting from the last character of the input word, extract one character at a time until you reach the first character. Do not skip any repeated letters.
+
+# Output Format
+Raw text only. No quotes, no code blocks, no labels.
+
+# Examples
+Input: statustext
+Output: txetsutats
+
+Input: statistics
+Output: scitsitats
+
+Input: understand
+Output: dnatsrednu
+
+Input: assessment
+Output: tnemssessa
+
+Input: successful
+Output: lufsseccus
+
+Input: teststatus
+Output: sutatstset
+
+# Task
+Reverse the input letter that user input, character by character.
+
+"""
 
 USER_PROMPT = """
 Reverse the order of letters in the following word. Only output the reversed word, no other text:
