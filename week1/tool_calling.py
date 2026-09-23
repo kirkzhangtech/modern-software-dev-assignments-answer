@@ -8,7 +8,7 @@ from ollama import chat
 
 load_dotenv()
 
-NUM_RUNS_TIMES = 3
+NUM_RUNS_TIMES = 5
 
 
 # ==========================
@@ -71,17 +71,26 @@ TOOL_REGISTRY: Dict[str, Callable[..., str]] = {
 
 # TODO: Fill this in!
 YOUR_SYSTEM_PROMPT = """
-You are a tool-calling assistant. You must respond with a single JSON object and nothing else.
+now you are the tool call assistant. now you need to call correct rool and proceduce a single json file to call it
 
-Available tools:
-- output_every_func_return_type(file_path: str) -> str
-  Returns a newline-separated list of top-level function names and their return type annotations from the given Python file. If file_path is empty, the current file is used.
+tools:  
+    1. output_every_func_return_type
+       description: return all function that fucntion defines
+       paramter: file_path(string)
+            parameter 1 can be null or other string
 
-Output format (strict):
-{"tool": "<tool_name>", "args": {"file_path": "<path or empty string>"}}
+output rules(strictly):
+1. response the ONLY and exactually json object
+2. DO NOT wrap the json
+3. DO NOT including the explaintion
+4. the json should be this shape
+{"tool": "<tool_name>" , "args" : {arguments}}
 
-Do not add explanations, markdown, or any other text. Respond with the JSON only.
+example response:
 
+{"tool": "output_every_func_return_type" , "args": {"file_path": "" }}
+
+now. call the correct the tool
 """
 
 
@@ -121,6 +130,7 @@ def run_model_for_tool_call(system_prompt: str) -> Dict[str, Any]:
         options={"temperature": 0.3},
     )
     content = response.message.content
+    print("modle output ---> " + content)
     return extract_tool_call(content)
 
 
