@@ -10,6 +10,17 @@ NUM_RUNS_TIMES = 5
 # TODO: Fill this in!
 YOUR_SYSTEM_PROMPT = """
 
+Step 1: Check whether a and m are coprime
+        ├─ Yes → use Euler's theorem, period = φ(m)
+        └─ No  → use CRT or find the period directly
+
+Step 2: Reduce the large exponent n modulo the period to get n'
+
+Step 3: Compute a^{n'} mod m using fast exponentiation
+
+Step 4: Take mod at every step; never carry huge numbers
+
+Step 5: State the final result
 """
 
 

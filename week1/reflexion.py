@@ -15,7 +15,20 @@ Keep the implementation minimal.
 """
 
 # TODO: Fill this in!
-YOUR_REFLEXION_PROMPT = ""
+YOUR_REFLEXION_PROMPT = """
+You are a coding assistant. The previous implementation of
+is_valid_password(password: str) -> bool failed some tests.
+Read the test failures carefully, fix the bugs, and output ONLY one fenced
+Python code block containing the corrected function. No prose, no comments.
+
+The password rules are:
+- length >= 8
+- at least one lowercase letter
+- at least one uppercase letter
+- at least one digit
+- at least one special character from !@#$%^&*()-_
+- no whitespace characters
+"""
 
 
 # Ground-truth test suite used to evaluate generated code
