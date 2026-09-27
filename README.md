@@ -26,3 +26,7 @@ These steps work with Python 3.12.
    poetry install --no-interaction
    ```
 
+
+## assignments status
+
+complete the week1
