@@ -143,8 +143,8 @@ K-Shot 问题不是一个单一的“bug”，而是一类由少样本示例（K
         - Description, names, full signature is a part of the prompt
 
     - Plan mode
-        Explicit tool prompting agent to make a spec for a change
-        Can engage in further questioning with user to clarify requirements
+        - Explicit tool prompting agent to make a spec for a change
+        - Can engage in further questioning with user to clarify requirements
   
     - Subagents
         - Invoked via an explicit tool call
@@ -168,12 +168,12 @@ K-Shot 问题不是一个单一的“bug”，而是一类由少样本示例（K
         - Triggered manually or automatically
         - Can be lossy so you may want to adapt your own
 
-Principles of Effective Harnesses
-Simplicity
-    - Fewer, more powerful tools are preferred (sql, bash, etc)
-Mind the context window – avoid the dumb zone so be careful of tool bloat
-    - More on optimal context engineering later
-Prompt contents and lengths will evolve – make it easy to adapt them
+- Principles of Effective Harnesses
+    - Simplicity
+        - Fewer, more powerful tools are preferred (sql, bash, etc)
+    - Mind the context window – avoid the dumb zone so be careful of tool bloat
+        - More on optimal context engineering later
+    - Prompt contents and lengths will evolve – make it easy to adapt them
 
 ![agent-core-flow](agent-core-flow.png)
 

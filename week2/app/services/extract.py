@@ -7,6 +7,9 @@ import json
 from typing import Any
 from ollama import chat
 from dotenv import load_dotenv
+from pydantic import BaseModel
+from ollama import chat
+from collections import namedtuple
 
 load_dotenv()
 
@@ -16,7 +19,12 @@ KEYWORD_PREFIXES = (
     "action:",
     "next:",
 )
+class Item(BaseModel):
+    name: str | None
 
+class ItemList(BaseModel):
+
+    items: List[Item]
 
 def _is_action_line(line: str) -> bool:
     stripped = line.strip().lower()
@@ -29,6 +37,24 @@ def _is_action_line(line: str) -> bool:
     if "[ ]" in stripped or "[todo]" in stripped:
         return True
     return False
+
+def extract_action_items_llm(USER_PROMPT: str) -> List[str]:
+    
+    response = chat(
+            model="mistral-nemo:12b",
+            messages=[
+                {"role": "user",
+                 "content": USER_PROMPT},
+            ],
+            options={"temperature": 0.5},
+            format=ItemList.model_json_schema(),
+    )
+    item_list=ItemList.model_validate_json(response.message.content)
+
+    items = []
+    for item in item_list.items:
+        items.append(item.name)
+    return items
 
 
 def extract_action_items(text: str) -> List[str]:
