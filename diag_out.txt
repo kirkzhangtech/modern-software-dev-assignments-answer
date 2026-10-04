@@ -1,0 +1,59 @@
+﻿======================================================================
+INPUT: '- [ ] Set up database\n- Write tests'
+----------------------------------------------------------------------
+RAW CONTENT: '{"items": [{"name": "Set up database"}]}'
+PARSED: ['Set up database']
+
+======================================================================
+INPUT: 'Remind me to email Bob about the invoice'
+----------------------------------------------------------------------
+RAW CONTENT: '{"items": [{"name": "Email Bob about the invoice"}]}'
+PARSED: ['Email Bob about the invoice']
+
+======================================================================
+INPUT: 'Meeting notes:\nSarah will handle the Q3 report.\nTODO: deploy the new API'
+----------------------------------------------------------------------
+RAW CONTENT: '{"items": [\n    {"name": "deploy the new API"}\n]}'
+PARSED: ['deploy the new API']
+
+======================================================================
+SCHEMA SENT TO MODEL:
+{
+  "$defs": {
+    "Item": {
+      "description": "A single action item returned by the model.",
+      "properties": {
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        }
+      },
+      "title": "Item",
+      "type": "object"
+    }
+  },
+  "description": "Structured-output envelope matching ``ItemList.model_json_schema()``.",
+  "properties": {
+    "items": {
+      "items": {
+        "$ref": "#/$defs/Item"
+      },
+      "title": "Items",
+      "type": "array"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "ItemList",
+  "type": "object"
+}
+

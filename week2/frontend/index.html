@@ -7,12 +7,18 @@
     <style>
       body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif; margin: 2rem auto; max-width: 800px; padding: 0 1rem; }
       h1 { font-size: 1.5rem; }
+      h2 { font-size: 1.1rem; margin-bottom: 0.25rem; }
       textarea { width: 100%; min-height: 160px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace; }
       button { padding: 0.5rem 1rem; }
+      button[disabled] { opacity: 0.6; cursor: progress; }
       .items { margin-top: 1rem; }
       .item { display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0; }
       .muted { color: #6b7280; font-size: 0.875rem; }
       .row { display: flex; gap: 0.5rem; align-items: center; }
+      .note { border: 1px solid #e5e7eb; border-radius: 6px; padding: 0.75rem; margin-top: 0.5rem; }
+      .note pre { white-space: pre-wrap; word-break: break-word; margin: 0.25rem 0 0; font-size: 0.875rem; }
+      .error { color: #b91c1c; }
+      section { margin-top: 2rem; border-top: 1px solid #e5e7eb; padding-top: 1rem; }
     </style>
   </head>
   <body>
@@ -24,49 +30,143 @@
     <div class="row">
       <label class="row"><input id="save_note" type="checkbox" checked /> Save as note</label>
       <button id="extract">Extract</button>
+      <button id="extract_llm">Extract LLM</button>
+      <button id="list_notes">List Notes</button>
     </div>
 
     <div class="items" id="items"></div>
 
+    <section>
+      <h2>Saved notes</h2>
+      <p class="muted" id="notes_count"></p>
+      <div id="notes"></div>
+    </section>
+
     <script>
       const $ = (sel) => document.querySelector(sel);
       const itemsEl = $('#items');
-      const btn = $('#extract');
-      btn.addEventListener('click', async () => {
-        const text = $('#text').value;
-        const save = $('#save_note').checked;
+      const notesEl = $('#notes');
+      const notesCountEl = $('#notes_count');
+
+      // Escape untrusted text before injecting it into innerHTML. Extracted
+      // items and note bodies are user/LLM supplied and must not be able to
+      // inject markup.
+      const escapeHtml = (value) => String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+
+      const readError = async (res, fallback) => {
+        try {
+          const body = await res.json();
+          // FastAPI validation errors put messages in a list of objects.
+          if (Array.isArray(body.detail)) {
+            return body.detail.map(d => d.msg || JSON.stringify(d)).join('; ');
+          }
+          return body.detail || fallback;
+        } catch (err) {
+          return fallback;
+        }
+      };
+
+      const postJson = async (url, payload) => {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+          throw new Error(await readError(res, `Request failed (${res.status})`));
+        }
+        return res.json();
+      };
+
+      const setBusy = (button, busy, busyLabel) => {
+        if (busy) {
+          button.dataset.label = button.textContent;
+          button.textContent = busyLabel;
+          button.disabled = true;
+        } else {
+          button.textContent = button.dataset.label || button.textContent;
+          button.disabled = false;
+        }
+      };
+
+      const renderItems = (items) => {
+        if (!items || items.length === 0) {
+          itemsEl.innerHTML = '<p class="muted">No action items found.</p>';
+          return;
+        }
+        itemsEl.innerHTML = items.map(it => (
+          `<div class="item"><input type="checkbox" data-id="${it.id}" /> ` +
+          `<span>${escapeHtml(it.text)}</span></div>`
+        )).join('');
+        itemsEl.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+          cb.addEventListener('change', async (e) => {
+            const id = e.target.getAttribute('data-id');
+            await postJson(`/action-items/${id}/done`, { done: e.target.checked });
+          });
+        });
+      };
+
+      const runExtraction = async (button, url, payload) => {
+        const text = $('#text').value.trim();
+        if (!text) {
+          itemsEl.innerHTML = '<p class="error">Please paste some notes first.</p>';
+          return;
+        }
+        setBusy(button, true, 'Extracting...');
         itemsEl.textContent = 'Extracting...';
         try {
-          const res = await fetch('/action-items/extract', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text, save_note: save }),
-          });
-          if (!res.ok) throw new Error('Request failed');
-          const data = await res.json();
-          if (!data.items || data.items.length === 0) {
-            itemsEl.innerHTML = '<p class="muted">No action items found.</p>';
-            return;
+          const data = await postJson(url, { text, save_note: $('#save_note').checked });
+          renderItems(data.items);
+          if (data.note_id) {
+            await loadNotes();
           }
-          itemsEl.innerHTML = data.items.map(it => (
-            `<div class="item"><input type="checkbox" data-id="${it.id}" /> <span>${it.text}</span></div>`
-          )).join('');
-          itemsEl.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-            cb.addEventListener('change', async (e) => {
-              const id = e.target.getAttribute('data-id');
-              await fetch(`/action-items/${id}/done`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ done: e.target.checked }),
-              });
-            });
-          });
         } catch (err) {
           console.error(err);
-          itemsEl.textContent = 'Error extracting items';
+          itemsEl.innerHTML = `<p class="error">${escapeHtml(err.message)}</p>`;
+        } finally {
+          setBusy(button, false);
         }
-      });
+      };
 
+      $('#extract').addEventListener('click', (e) => runExtraction(
+        e.currentTarget, '/action-items/extract', {}
+      ));
+
+      $('#extract_llm').addEventListener('click', (e) => runExtraction(
+        e.currentTarget, '/action-items/extract-llm', {}
+      ));
+
+      const loadNotes = async () => {
+        try {
+          const res = await fetch('/notes');
+          if (!res.ok) {
+            throw new Error(await readError(res, `Request failed (${res.status})`));
+          }
+          const notes = await res.json();
+          notesCountEl.textContent = notes.length
+            ? `${notes.length} note${notes.length === 1 ? '' : 's'} saved`
+            : 'No notes saved yet.';
+          notesEl.innerHTML = notes.map(note => (
+            `<div class="note"><strong>#${note.id}</strong> ` +
+            `<span class="muted">${escapeHtml(note.created_at)}</span>` +
+            `<pre>${escapeHtml(note.content)}</pre></div>`
+          )).join('');
+        } catch (err) {
+          console.error(err);
+          notesCountEl.innerHTML = `<span class="error">${escapeHtml(err.message)}</span>`;
+          notesEl.innerHTML = '';
+        }
+      };
+
+      $('#list_notes').addEventListener('click', () => loadNotes());
+
+      // Populate the notes panel on first load.
+      loadNotes();
     </script>
   </body>
   </html>
